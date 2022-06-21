@@ -144,18 +144,15 @@ class Blockchain:
             }
         )
 
-        if sender_address == MINING_SENDER:
-            self.transactions.append(transaction)
-            return len(self.chain) + 1
-        else:
-            transaction_verification = self.verify_transaction_signature(
-                sender_address, signature, transaction
-            )
-            if transaction_verification:
-                self.transactions.append(transaction)
-                return len(self.chain) + 1
-            else:
+        if sender_address != MINING_SENDER:
+            if not (
+                transaction_verification := self.verify_transaction_signature(
+                    sender_address, signature, transaction
+                )
+            ):
                 return False
+        self.transactions.append(transaction)
+        return len(self.chain) + 1
 
     def valid_chain(self, chain: list) -> bool:
         """
