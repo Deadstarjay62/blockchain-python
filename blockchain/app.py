@@ -30,24 +30,23 @@ def new_transaction():
     values = request.form
 
     required = ["sender_address", "recipient_address", "amount", "signature"]
-    if not all(k in values for k in required):
+    if any(k not in values for k in required):
         return "Missing values", 400
 
-    transaction_result = blockchain.submit_transaction(
+    if transaction_result := blockchain.submit_transaction(
         values["sender_address"],
         values["recipient_address"],
         values["amount"],
         values["signature"],
-    )
+    ):
+        response = {
+            "message": f"Transaction will be added to Block {str(transaction_result)}"
+        }
 
-    if not transaction_result:
+        return jsonify(response), 201
+    else:
         response = {"message": "Invalid Transaction!"}
         return jsonify(response), 406
-    else:
-        response = {
-            "message": "Transaction will be added to Block " + str(transaction_result)
-        }
-        return jsonify(response), 201
 
 
 @app.route("/transactions/get", methods=["GET"])
@@ -109,16 +108,15 @@ def register_nodes():
 
     response = {
         "message": "New nodes have been added",
-        "total_nodes": [node for node in blockchain.nodes],
+        "total_nodes": list(blockchain.nodes),
     }
+
     return jsonify(response), 201
 
 
 @app.route("/nodes/resolve", methods=["GET"])
 def consensus():
-    replaced = blockchain.resolve_conflicts()
-
-    if replaced:
+    if replaced := blockchain.resolve_conflicts():
         response = {"message": "Our chain was replaced", "new_chain": blockchain.chain}
     else:
         response = {"message": "Our chain is authoritative", "chain": blockchain.chain}
